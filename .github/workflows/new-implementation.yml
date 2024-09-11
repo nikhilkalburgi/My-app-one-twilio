@@ -31,7 +31,7 @@ jobs:
 
             const userPRs = pullRequests.filter(pr => pr.user.login === context.actor);
 
-            if (userPRs.length > 1) {
+            if (userPRs.length === 1) {
               github.rest.issues.createComment({
                 issue_number: context.issue.number,
                 owner: context.repo.owner,
