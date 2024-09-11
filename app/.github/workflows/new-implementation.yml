@@ -25,6 +25,7 @@ jobs:
               repo: context.repo.repo,
               body: process.env.NEW_TOOL_MESSAGE,
             })
+            console.log("Workflow is working!!");
         env:
           NEW_TOOL_MESSAGE: |
             Hey there 👋!
