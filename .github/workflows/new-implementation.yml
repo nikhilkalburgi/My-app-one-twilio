@@ -17,6 +17,26 @@ jobs:
 
     steps:
       - uses: actions/github-script@v7
+        id: check_prs
+        with:
+          script: |
+            const { data: pullRequests } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'all',
+              per_page: 100
+            });
+
+            const userPRs = pullRequests.filter(pr => pr.user.login === context.actor);
+
+            if (userPRs.length > 1) {
+              core.setOutput('first_pr', 'false');
+            } else {
+              core.setOutput('first_pr', 'true');
+            }
+
+      - uses: actions/github-script@v7
+        if: steps.check_prs.outputs.first_pr == 'true'
         with:
           script: |
             github.rest.issues.createComment({
