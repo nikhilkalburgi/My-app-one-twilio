@@ -1,9 +1,6 @@
 name: New Implementation Commenter
+
 on:
-  # Careful! Do not modify this workflow to run untrusted code!
-  # It runs even when the base is a forked repository.
-  # As-is, this is intended behavior (to properly show the comment).
-  # See the warning here: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request_target
   pull_request_target:
     types:
       - opened
@@ -13,32 +10,44 @@ on:
       - README.md
 
 jobs:
-  comment:
+  check-first-pr:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
 
     steps:
+      # Step 1: Check if this is the first PR from the user
       - uses: actions/github-script@v7
+        id: check_prs
         with:
           script: |
             const { data: pullRequests } = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              state: 'all'
+              state: 'all',  // Include both open and closed PRs
             });
 
+            // Filter pull requests by the user who made the current PR
             const userPRs = pullRequests.filter(pr => pr.user.login === context.actor);
-            console.log(userPRs);
+
+            // Determine if the current PR is the user's first PR
             if (userPRs.length > 1) {
-              github.rest.issues.createComment({
-                issue_number: context.issue.number,
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: process.env.NEW_TOOL_MESSAGE,
-              })
+              core.setOutput('first_pr', 'false');
+            } else {
+              core.setOutput('first_pr', 'true');
             }
-            
+
+      # Step 2: Post comment if it’s the user’s first PR
+      - uses: actions/github-script@v7
+        if: steps.check_prs.outputs.first_pr == 'true'
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: process.env.NEW_TOOL_MESSAGE,
+            })
         env:
           NEW_TOOL_MESSAGE: |
             Hey there 👋!
@@ -55,7 +64,6 @@ jobs:
                       An invite can be found [here](https://json-schema.org/slack) or on our homepage!
               3. [ ] **Common Interfaces**: We maintain a page with some "commonly useful programming interfaces" that tooling may want to implement and present to your users.
                       You can find that page [here in our documentation](https://json-schema.org/implementers/interfaces).
-                      Have a read through and consider whether you implement or should implement any of what's there.
               4. [ ] **Bowtie Harness**: [Bowtie](https://github.com/bowtie-json-schema/bowtie) is a tool which gives JSON Schema users access to a huge number of different implementations across many languages, and [reports on](https://bowtie.report/) the compliance of those implementations with the JSON Schema specifications.
                       If it makes sense for your kind of tool, consider writing a *harness* which connects it to Bowtie. Instructions for doing so can be found in the tutorial in [Bowtie's documentation](https://docs.bowtie.report/).
 
