@@ -7,7 +7,7 @@ on:
     branches:
       - master
     paths:
-      - ./README.md
+      - README.md
 
 jobs:
   check-first-pr:
@@ -16,29 +16,7 @@ jobs:
       pull-requests: write
 
     steps:
-      # Step 1: Set up GitHub action
       - uses: actions/github-script@v7
-        id: check_prs
-        with:
-          script: |
-            const { data: pullRequests } = await github.rest.pulls.list({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              state: 'all',  // 'all' to include closed/merged PRs
-              per_page: 100  // Adjust the number if necessary
-            });
-
-            const userPRs = pullRequests.filter(pr => pr.user.login === context.actor);
-
-            if (userPRs.length > 1) {
-              core.setOutput('first_pr', 'false');
-            } else {
-              core.setOutput('first_pr', 'true');
-            }
-
-      # Step 2: Post comment if it's the first PR from the user
-      - uses: actions/github-script@v7
-        if: steps.check_prs.outputs.first_pr == 'true'
         with:
           script: |
             github.rest.issues.createComment({
